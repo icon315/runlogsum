@@ -93,9 +93,6 @@ void RunLogSum(int ascensionNumber ) {
 	sessionlogscount = sessionlogsstring.split_string("Beginning New Ascension");
 	//for ii from my_daycount() downto 1 { runlog += session_logs(my_daycount())[ii-1]; }
 	//runlog += session_logs(1)[0];
-	print(sessionlogscount.count());
-	print((sessionlogscount.count()));
-	print((my_ascensions()-ascensionNumber));
 	runlog = sessionlogscount[sessionlogscount.count()-(my_ascensions()-ascensionNumber)];
 	writeln(substring(runlog,index_of(runlog,"Ascension #"),index_of(runlog,"Uncategorized")));
 	//runlog = substring(runlog,index_of(runlog,"Beginning New Ascension"));
@@ -355,41 +352,33 @@ void RunLogSum(int ascensionNumber ) {
 	foreach tt,ll in loclist {if (ll.index_of("eat") == 0 || ll.index_of("drink") == 0 || ll.index_of("eat") == 0|| ll.index_of("Cook") == 0) continue; loccount[ll] += 1;}
 	
 	
-	print("//////////Location - Labels//////////");
 	//Location - Labels
 	string varDataLC = "'";
 	foreach ll,nn in loccount {varDataLC = varDataLC+(ll.replace_string("'",""))+"','";}
 	varDataLC = varDataLC.substring(0,varDataLC.length()-1);
-	print(varDataLC);
+
 	
-	print("//////////Location - Turn Coun//////////");
 	//Location - Turn Count
 	string varDataTC = "";
 	foreach ll,nn in loccount { varDataTC = varDataTC+(nn+1)+",";}
 	varDataTC = varDataTC.substring(0,varDataTC.length()-1);
-	print(varDataTC);
+
 	
-	print("//////////Skills - Labels//////////");
 	//Skills - Labels
 	string varDataSK = "'";
 	foreach sk,ii in castlist {varDataSK = varDataSK+(sk.replace_string("'",""))+"','";}
 	varDataSK = varDataSK.substring(0,varDataSK.length()-1);
-	print(varDataSK);	
-	
-	print("//////////Skills - Count//////////");
+
 	//Skills - Count
 	string varDataSKCT = "";
 	foreach sk,ii in castlist { varDataSKCT = varDataSKCT+(ii+1)+",";}
 	varDataSKCT = varDataSKCT.substring(0,varDataSKCT.length()-1);
-	print(varDataSKCT);
-	
+
 	
 	//Skills - MP Cost
-	print("//////////Skills - MP Cost//////////");
 	string varDataSKCTMP = "";
 	foreach sk,ii in castlist { varDataSKCTMP = varDataSKCTMP+((ii+1)* sk.mp_cost())+",";}
 	varDataSKCTMP = varDataSKCTMP.substring(0,varDataSKCTMP.length()-1);
-	print(varDataSKCTMP);
 	
 	writeln("<script>var ctx = document.getElementById(\"AscensionData\"); var AscensionData = new Chart(ctx, { type: 'bar',data: {labels: ["+varDataLC+"],datasets: [{label: 'Current Ascension',data: ["+varDataTC+"], backgroundColor: [ ");
 
