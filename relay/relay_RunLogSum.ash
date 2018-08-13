@@ -1,35 +1,29 @@
-script "RunLogSum.ash";
-notify ckb1;
+script "relay_RunLogSum.ash";
+notify icon315;
 
 import "htmlform.ash";
 /*
+Original code by ckb:
+
+https://sourceforge.net/projects/ckbrunlogsum/
 svn checkout https://svn.code.sf.net/p/ckbrunlogsum/code/
 
-BANISHMENT
-Breadcar
-Snokebomb
-KGB
-
-YELLOW DESTRUCTION
-Disintegrate
-Missiles
-Spooky Jelly
-
-COPIED COMBATS
-enamorang
-
-WANDERING ENCOUNTERS
-
-COMBAT ITEMS
-
-CASTS
-
-EATING AND DRINKING AND USING
-
-
-
 */
+string[int] sessionlogs;
+string sessionlogsstring;
+string[int] sessionlogscount;
 
+void loadLogs(int getdays)
+{
+	sessionlogs = session_logs(getdays);
+	for days from getdays downto 1
+	{
+		sessionlogsstring += sessionlogs[days-1];
+	}
+
+	sessionlogscount = sessionlogsstring.split_string("Beginning New Ascension");
+
+}
 
 void RunLogSum(int ascensionNumber ) {
 
@@ -80,26 +74,20 @@ void RunLogSum(int ascensionNumber ) {
 	set_property("logStatusEffects",true);
 
 
+
 	string runlog = "";
-	string[int] sessionlogs;
-	string sessionlogsstring;
-	string[int] sessionlogscount;
-	sessionlogs = session_logs(90);
-	for days from 90 downto 1
-	{
-		sessionlogsstring += sessionlogs[days-1];
-	}
-	
-	sessionlogscount = sessionlogsstring.split_string("Beginning New Ascension");
 	//for ii from my_daycount() downto 1 { runlog += session_logs(my_daycount())[ii-1]; }
 	//runlog += session_logs(1)[0];
+	print(sessionlogscount);
+	print(sessionlogscount.count());
+	print(sessionlogscount.count()-(my_ascensions()-ascensionNumber));
 	runlog = sessionlogscount[sessionlogscount.count()-(my_ascensions()-ascensionNumber)];
-	writeln(substring(runlog,index_of(runlog,"Ascension #"),index_of(runlog,"Uncategorized")));
+	writeln(substring(runlog,index_of(runlog,":")+1,index_of(runlog,"Uncategorized")).replace_string("\n", "</br>"));
 	//runlog = substring(runlog,index_of(runlog,"Beginning New Ascension"));
 	if (contains_text(runlog,"Freeing King Ralph")) { runlog = substring(runlog,0,index_of(runlog,"Freeing King Ralph")+18); }
 	if (contains_text(runlog,"Took choice 1089/30: Perform Service")) { runlog = substring(runlog,0,index_of(runlog,"Took choice 1089/30: Perform Service")+36); }
 	if (contains_text(runlog,"Encounter: You Found It!")) { runlog = substring(runlog,0,index_of(runlog,"Encounter: You Found It!")+24); }
-	string ffn = my_name()+"-runlog_"+to_string(my_ascensions()+1,"%04d")+".txt";
+	string ffn = my_name()+"-runlog_"+to_string(ascensionNumber+2,"%04d")+".txt";
 
 	int[string,string,string,string,string,string,string,string,string,string,string] rlx;
 	rlx["0000","Turn","Location","Encounter","Familiar","Mus","Myst","Mox","Meat","Special","Items"]=0;
@@ -120,16 +108,15 @@ void RunLogSum(int ascensionNumber ) {
 	writeln("<script language=\"Javascript\" type=\"text/javascript\" src=\"sorttable.js\"></script>");
 	writeln("<canvas id=\"AscensionData\" width=\"1300px\" height=\"700px\"></canvas>");
 	writeln("<canvas id=\"SkillsData\" width=\"1300px\" height=\"700px\"></canvas>");
-	writeln("<aonclick='document.location.reload(true)'> Click here to Refresh</a>");
 
 	write("<table cellpadding=\"13\" cellspacing=\"0\" border=\"1px\" class=\"sortable\">");
 	write("<tr><td style=\"background-color: #EFEFEF\"><a>Turn</a></td><td>Location</td><td style=\"background-color: #EFEFEF\"><a>Encounter</a></td><td>Familiar</td><td style=\"background-color: #EFEFEF\"><a>Mus</a></td><td>Myst</td><td style=\"background-color: #EFEFEF\"><a>Mox</a></td><td>Meat</td><td style=\"background-color: #EFEFEF\"><a>Special</a></td><td>Items</td></tr>");
-	
-	matcher mrlcs = create_matcher("Took choice 1089/(\\d+\): Perform Service \\((\\d+\) Adventures\\)",runlog);
-	
-	while (find(mrlcs)) { 
 
-	
+	matcher mrlcs = create_matcher("Took choice 1089/(\\d+\): Perform Service \\((\\d+\) Adventures\\)",runlog);
+
+	while (find(mrlcs)) {
+
+
 	write("<tr><td>");
 	write(to_string("Total Turns ("+group(mrlcs,2)+")"));
 	write("</td><td>");
@@ -187,17 +174,17 @@ void RunLogSum(int ascensionNumber ) {
 			write("Clean Steam Tunnels (Hot Protection)");
 			break;
 		}
-		case 11:	
+		case 11:
 		{
 			write("Coil Wire (Always 60)");
 			break;
 		}
-		
+
 	}
 	write("</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>");
-	
+
 	}
-	
+
 	while (find(mrl)) {
 		int trn = to_int(group(mrl,1));
 		string loc = group(mrl,2);
@@ -248,8 +235,8 @@ void RunLogSum(int ascensionNumber ) {
 
 		string spc = "";
 		foreach ss in speclist {
-			if (contains_text(txt,ss)) { 
-			spc += ss; 
+			if (contains_text(txt,ss)) {
+			spc += ss;
 			banishlist[spc,enc] ++;
 			}
 		}
@@ -338,7 +325,7 @@ void RunLogSum(int ascensionNumber ) {
 		write(to_string(itl));
 		write("</td>");
 		write("</tr>");
-		
+
 		//if (trn>55) { break; }
 	}
 	map_to_file(banishlist,"TESTINGBEE.txt");
@@ -347,45 +334,45 @@ void RunLogSum(int ascensionNumber ) {
 	write("<tr><td>Banish Type</td><td>Monsta</td><td># of Times</td></tr>");
 	foreach itm,mons,times in banishlist{ write("<tr><td>"+itm+"</td><td>"+mons+"</td><td>"+times+"</td></tr>"); }
 	write("</table>");
-	
+
 	int[string] loccount;
 	foreach tt,ll in loclist {if (ll.index_of("eat") == 0 || ll.index_of("drink") == 0 || ll.index_of("eat") == 0|| ll.index_of("Cook") == 0) continue; loccount[ll] += 1;}
-	
-	
+
+
 	//Location - Labels
 	string varDataLC = "'";
 	foreach ll,nn in loccount {varDataLC = varDataLC+(ll.replace_string("'",""))+"','";}
 	varDataLC = varDataLC.substring(0,varDataLC.length()-1);
-	
+
 	//Location - Turn Count
 	string varDataTC = "";
 	foreach ll,nn in loccount { varDataTC = varDataTC+(nn+1)+",";}
 	varDataTC = varDataTC.substring(0,varDataTC.length()-1);
-	
-	
+
+
 	//Skills - Labels
 	string varDataSK = "'";
 	foreach sk,ii in castlist {varDataSK = varDataSK+(sk.replace_string("'",""))+"','";}
 	varDataSK = varDataSK.substring(0,varDataSK.length()-1);
-	
-	
+
+
 	//Skills - Count
 	string varDataSKCT = "";
 	foreach sk,ii in castlist { varDataSKCT = varDataSKCT+(ii+1)+",";}
 	varDataSKCT = varDataSKCT.substring(0,varDataSKCT.length()-1);
-	
-	
-	
+
+
+
 	//Skills - MP Cost
-	
+
 	string varDataSKCTMP = "";
 	foreach sk,ii in castlist { varDataSKCTMP = varDataSKCTMP+((ii+1)* sk.mp_cost())+",";}
 	varDataSKCTMP = varDataSKCTMP.substring(0,varDataSKCTMP.length()-1);
-	
-	
+
+
 	writeln("<script>var ctx = document.getElementById(\"AscensionData\"); var AscensionData = new Chart(ctx, { type: 'bar',data: {labels: ["+varDataLC+"],datasets: [{label: 'Current Ascension',data: ["+varDataTC+"], backgroundColor: [ ");
 
-	
+
 	string[int] coloRs;
 foreach colorCode in $strings["#3366CC", "#DC3912", "#FF9900", "#109618", "#990099", "#3B3EAC", "#0099C6", "#DD4477", "#66AA00", "#B82E2E", "#316395", "#994499", "#22AA99", "#AAAA11", "#6633CC", "#E67300", "#8B0707", "#329262", "#5574A6", "#3B3EAC"]
 	{
@@ -394,18 +381,18 @@ foreach colorCode in $strings["#3366CC", "#DC3912", "#FF9900", "#109618", "#9900
 	int chooseColor = 0;
 	foreach i in loccount { if(chooseColor > 19) chooseColor=0;write(coloRs[chooseColor]+","); chooseColor++;}
 	write("],borderColor: 'rgba(255, 255, 255, 1)',borderWidth: 5 }] }, options: { responsive: false,legend: {display: false}, scales: { xAxes: [{categoryPercentage:1.0 ,barPercentage:1.0 ,ticks: { fontSize:10, maxRotation: 90,minRotation: 90}}]}, title: { display: true, fontSize:20, text: 'Ascension Data' } }});</script>");
-	
+
 	writeln("<script>var ctx = document.getElementById(\"SkillsData\"); var SkillsData = new Chart(ctx, { type: 'bar', ");
-	
+
 	write("data: { labels: ["+varDataSK+"], datasets: [{ label: '# Times skills Casted', data: ["+varDataSKCT+"], backgroundColor: '#3366CC',borderColor: 'rgba(255, 255, 255, 1)',borderWidth: 5},{ ");
-	
-	write(" label: 'Total MP Cost of Usage',hidden: true, data: ["+varDataSKCTMP+"], backgroundColor: '#DC3912',borderColor: 'rgba(255, 255, 255, 1)',borderWidth: 5 }] }, ");
-	
+
+	write(" label: 'Total MP Cost (Predicted)',hidden: true, data: ["+varDataSKCTMP+"], backgroundColor: '#DC3912',borderColor: 'rgba(255, 255, 255, 1)',borderWidth: 5 }] }, ");
+
 	write("options: { responsive: false, scales: { xAxes: [{categoryPercentage:1.0 ,barPercentage:1.0 ,ticks: { fontSize:10, maxRotation: 90,minRotation: 90}}]}, title: { display: true, fontSize:20, text: 'Skills Data' } }});</script>");
-	
-	
+
+
 	//print("");
-	
+
 //	print("Skill casting");
 	//foreach sk,ii in castlist { print(ii+"	"+sk); }
 
@@ -419,14 +406,16 @@ foreach colorCode in $strings["#3366CC", "#DC3912", "#FF9900", "#109618", "#9900
 }
 
 void main(){
+	//Load 90 logs
+	loadLogs(90);
 	write_page();
-	writeln("<center><hr>Choose ascension number</hr>");
+	writeln("<center><h3>Choose ascension to load:<br/>");
 	writeln("<form name='relayform' method='POST' action=''>");
 	for i from my_ascensions() downto (my_ascensions()-20)
-	{	
-		writeln("<input class=\"button\" type=\"submit\" name=\"ascension\" value='"+i+"'/>");	
+	{
+		writeln("<input class=\"button\" type=\"submit\" name=\"ascension\" value='"+(i == my_ascensions() ? "Current Ascension" : (i+1))+"'/>");
 	}
-	writeln("</form></center>");
+	writeln("</form></center><hr/>");
 	fields = form_fields();
 	success = count(fields) > 0;
 	switch(fields['ascension'])
@@ -435,9 +424,14 @@ void main(){
 		{
 			break;
 		}
+		case "Current Ascension":
+		{
+			RunLogSum(my_ascensions()-1);
+			break;
+		}
 		case fields['ascension']:
 		{
-			RunLogSum(fields['ascension'].to_int()-1);
+			RunLogSum(fields['ascension'].to_int()-2);
 			break;
 		}
 		default:
