@@ -100,7 +100,7 @@ void RunLogSum(int ascensionNumber ) {
 
 	int[skill] castlist;
 	string[int] loclist;
-	int[string,string] banishlist;
+	int[string,string,string] banishlist;
 	familiar fam = $familiar[none];
 
 	writeln("<script src=\"Chart.js\"></script>");
@@ -110,7 +110,7 @@ void RunLogSum(int ascensionNumber ) {
 	writeln("<canvas id=\"SkillsData\" width=\"1300px\" height=\"700px\"></canvas>");
 
 	write("<table cellpadding=\"13\" cellspacing=\"0\" border=\"1px\" class=\"sortable\">");
-	write("<tr><td style=\"background-color: #EFEFEF\"><a>Turn</a></td><td>Location</td><td style=\"background-color: #EFEFEF\"><a>Encounter</a></td><td>Familiar</td><td style=\"background-color: #EFEFEF\"><a>Mus</a></td><td>Myst</td><td style=\"background-color: #EFEFEF\"><a>Mox</a></td><td>Meat</td><td style=\"background-color: #EFEFEF\"><a>Special</a></td><td>Items</td></tr>");
+	write("<tr><td style=\"max-width: 5px;background-color: #EFEFEF\"><a>Turn</a></td><td>Location</td><td style=\"background-color: #EFEFEF\"><a>Encounter</a></td><td>Familiar</td><td style=\"background-color: #EFEFEF\"><a>Mus</a></td><td>Myst</td><td style=\"background-color: #EFEFEF\"><a>Mox</a></td><td>Meat</td><td style=\"background-color: #EFEFEF\"><a>Special</a></td><td>Items</td></tr>");
 
 	matcher mrlcs = create_matcher("Took choice 1089/(\\d+\): Perform Service \\((\\d+\) Adventures\\)",runlog);
 
@@ -237,7 +237,7 @@ void RunLogSum(int ascensionNumber ) {
 		foreach ss in speclist {
 			if (contains_text(txt,ss)) {
 			spc += ss;
-			banishlist[spc,enc] ++;
+			banishlist[spc,enc,loc] ++;
 			}
 		}
 
@@ -293,6 +293,8 @@ void RunLogSum(int ascensionNumber ) {
 			spc = spc.substring(0,spc.last_index_of("!"));
 		while(itl.last_index_of("|") != -1)
 			itl = itl.replace_string("|",", ");
+		if (loc.index_of("eat") == 0 || loc.index_of("drink") == 0 || loc.index_of("eat") == 0)
+			continue;
 		write("<tr>");
 		write("<td>");
 		write(to_string(trn));
@@ -330,11 +332,26 @@ void RunLogSum(int ascensionNumber ) {
 	}
 	map_to_file(banishlist,"TESTINGBEE.txt");
 	write("</table>");
-	write("<table cellpadding=\"3\" cellspacing=\"0\" border=\"1px\" class=\"sortable\">");
-	write("<tr><td>Banish Type</td><td>Monsta</td><td># of Times</td></tr>");
-	foreach itm,mons,times in banishlist{ write("<tr><td>"+itm+"</td><td>"+mons+"</td><td>"+times+"</td></tr>"); }
+	write("<<h1>Banishes and Limited Skills</h1><table cellpadding=\"3\" cellspacing=\"0\" border=\"1px\" class=\"sortable\">");
+	write("<tr><td>Item/Skill Name</td><td>Monster</td><td>Location</td><td># of Times</td></tr>");
+	foreach itm,mons,loc,times in banishlist{ write("<tr><td>"+itm+"</td><td>"+mons+"</td><td>"+loc+"</td><td>"+times+"</td></tr>"); }
 	write("</table>");
 
+	write("<h1>Consumables Table</h1><table cellpadding=\"3\" cellspacing=\"0\" border=\"1px\" class=\"sortable\">");
+	write("<tr><td>Organ</td><td>Amount</td><td>Type</td></tr>");
+	foreach indx,tc,ll in rlx {		
+		matcher consm = create_matcher("(eat|drink|chew) (\\d+?) (.+)",ll);
+		print(ll);
+		if(find(consm))
+		{
+			print("found");
+			write("<tr><td>"+consm.group(1)+"</td><td>"+consm.group(2)+"</td><td>"+consm.group(3)+"</td></tr>");
+		}
+		else
+			print("didn't find more");
+	}
+	write("</table>");
+	
 	int[string] loccount;
 	foreach tt,ll in loclist {if (ll.index_of("eat") == 0 || ll.index_of("drink") == 0 || ll.index_of("eat") == 0|| ll.index_of("Cook") == 0) continue; loccount[ll] += 1;}
 
@@ -409,6 +426,7 @@ void main(){
 	//Load 90 logs
 	loadLogs(90);
 	write_page();
+	writeln("<link rel='stylesheet' type='text/css' href='http://images.kingdomofloathing.com/styles.css' />");
 	writeln("<center><h3>Choose ascension to load:<br/>");
 	writeln("<form name='relayform' method='POST' action=''>");
 	for i from my_ascensions() downto (my_ascensions()-20)
