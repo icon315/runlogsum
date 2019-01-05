@@ -22,7 +22,7 @@ string intAsDate(int dateInt)
 
 void main(int HowManyAscensionsToFind)
 {
-	x = HowManyAscensionsToFind-1;
+	int x = HowManyAscensionsToFind-1;
 	string startDate = today_to_string();
 	file_to_map("logascensions.txt",Ascensions);
 	for i from my_ascensions() to (my_ascensions()-x)
