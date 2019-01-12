@@ -157,111 +157,6 @@ void printTrace(string mes)
 	//print(get_stack_trace()[0].line+": "+mes);
 }
 
-int dateAsInt(string date) {
-	//date as string formatted "yyyyMMdd" like today_to_string() returns
-	int dateYear = format_date_time("yyyyMMdd", date, "yyyy").to_int() - 1;
-	int dateDay = format_date_time("yyyyMMdd", date, "D").to_int() - 1;
-	return dateYear * 365 + to_int(dateYear / 4) - to_int(dateYear / 100) + to_int(dateYear / 400) + dateDay;
-}
-
-
-string intAsDate(int dateInt)
-{
-
-	return floor((((dateInt)-(floor(dateInt / 365)/4)+(floor(dateInt / 365)/100)-(floor(dateInt / 365)/400)) / 365)+1) +""+ format_date_time("D",(((dateInt)-(floor(dateInt / 365)/4)+(floor(dateInt / 365)/100)-(floor(dateInt / 365)/400)) % 365 + 1),"MMdd");
-}
-
-void findAscensions(int x)
-{
-	x--;
-	boolean aftercore = true;
-	if(get_property("questL13Final") != "finished")
-		aftercore = false;
-	string startDate = today_to_string();
-	file_to_map("logascensions.txt",Ascensions);
-	for i from my_ascensions()+1 to (my_ascensions()-x)
-	{
-		if(Ascensions contains i)
-		{
-			printTrace("Already Recored");
-			continue;
-		}
-		string logDateString;
-		string [int]logToCheck;
-		boolean foundEnd = false;
-		int logChecked = 0;
-		string logEndDate;
-		if(!aftercore && i == my_ascensions()+1)
-		{
-			logDateString = intAsDate(dateAsInt(startDate)-logChecked);
-			printTrace("End log date: "+logDateString);
-			logEndDate = logDateString;
-			foundEnd = true;
-			AscensionEnd[i] = today_to_string();		
-		}
-		while(!foundEnd)
-		{
-			logDateString = intAsDate(dateAsInt(startDate)-logChecked);
-			logToCheck = session_logs(my_name(), logDateString, 0);
-			matcher logEndNormal = create_matcher("\\n\\[(\\d+)\\] Freeing King Ralph", logToCheck[0]);
-			matcher logEndCS = create_matcher("\\nTook choice 1089/30: Perform Service", logToCheck[0]);
-			matcher logEndEd = create_matcher("\\nEncounter: You Found It!", logToCheck[0]);
-			if(find(logEndNormal) || find(logEndCS) || find(logEndEd))
-			{
-				printTrace("End log date: "+logDateString);
-				logEndDate = logDateString;
-				foundEnd = true;
-				AscensionEnd[i] = logEndDate;
-			}
-			logChecked++;
-		}
-		printTrace("Found ascension End "+i+": "+my_name() +"_" +logEndDate+".txt");
-		startDate = intAsDate(dateAsInt(logDateString)-1);
-	}
-	startDate = today_to_string();
-	for i from my_ascensions()+1 to (my_ascensions()-x)
-	{
-		if(Ascensions contains i)
-		{
-			printTrace("Already Recored");
-			continue;
-		}
-		string logDateString;
-		string [int]logToCheck;
-		boolean foundStart = false;
-		int logChecked = 0;
-		string logStartDate;
-		while(!foundStart)
-		{
-			logDateString = intAsDate(dateAsInt(startDate)-logChecked);
-			logToCheck = session_logs(my_name(), logDateString, 0);
-			//[462] Freeing King Ralph
-			matcher logStart = create_matcher("\\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\\r\\n\\r\\nAscension #(\\d+\)", logToCheck[0]);
-			if(find(logStart))
-			{
-				printTrace("Start log date: "+logDateString);
-				printTrace(logStart.group(0));
-				logStartDate = logDateString;
-				foundStart = true;
-				AscensionStart[i] = logStartDate;
-			}
-			logChecked++;
-
-		}
-		printTrace("Found ascension End "+i+": "+my_name() +"_" +logStartDate+".txt");
-		startDate = intAsDate(dateAsInt(logDateString)-1);
-	}
-
-	//Ascensions[DateStart,IndexStart,DateEnd,IndexEnd]
-	foreach asc,date in AscensionStart
-	{
-		//printTrace("Ascension Start ("+asc+") in log "+date);
-		//printTrace("Ascension End ("+asc+") in log "+AscensionEnd[asc]);
-		Ascensions[asc,date] = AscensionEnd[asc];
-	}
-	map_to_file(Ascensions,"logascensions.txt");
-}
-
 
 string loadLogs(int ascension)
 {
@@ -407,30 +302,6 @@ void RunPullsParse(int ascension)
 }
 void RunLogParse(int ascension, string startlog, string endlog)
 {
-	
-	string ascensionLogs = loadLogs(ascension);
-	string pathmatch = "(";
-	foreach i in paths { pathmatch += i+"|"; }
-	pathmatch = pathmatch.substring(0,pathmatch.last_index_of("|")) + ")";
-	printTrace (pathmatch);
-	string classmatch = "(";
-	foreach i in $classes[] { classmatch += i+"|"; }
-	classmatch = classmatch.substring(0,classmatch.last_index_of("|")) + ")";
-	printTrace (classmatch);
-	string moonmatch = "(";
-	foreach i in moonsigns { moonmatch += i+"|"; }
-	moonmatch = moonmatch.substring(0,moonmatch.last_index_of("|")) + ")";
-	printTrace (moonmatch);
-	matcher runType = create_matcher("Ascension #(\\d+\):\\r\\n(Casual|Softcore|Hardcore) "+pathmatch+" "+classmatch+"\\r\\n"+moonmatch,ascensionLogs);
-	if(runType.find())
-	{
-		printTrace(ascension);
-		printTrace(runType.group(1).to_int());
-		writeln(runType.group(0));
-		//0-Line 1-Asc # 2- SC/HC/C 3-Path 4-Class 5-Moon Sign
-		if(runType.group(1).to_int() != ascension-1)
-			abort("Not correct log");
-	}
 	string[int] runLog = loadLogsArray(ascension);
 	printTrace(runLog.count());
 	int startIndex = -1;
@@ -443,15 +314,31 @@ void RunLogParse(int ascension, string startlog, string endlog)
 	string loc,fam,spc,itm;
 	int mus,mys,mox,meat;
 	logData thisEncounter;
+	string pathmatch = "(";
+	foreach i in paths { pathmatch += i+"|"; }
+	pathmatch = pathmatch.substring(0,pathmatch.last_index_of("|")) + ")";
+	print (pathmatch);
+	string classmatch = "(";
+	foreach i in $classes[] { classmatch += i+"|"; }
+	classmatch = classmatch.substring(0,classmatch.last_index_of("|")) + ")";
+	print (classmatch);
+	string moonmatch = "^(";
+	foreach i in moonsigns { moonmatch += i+"|"; }
+	moonmatch = moonmatch.substring(0,moonmatch.last_index_of("|")) + ")";
+	print (moonmatch);
 	
-	startTable($strings[Turn,Location,Encounter,Familiar,Stat Gains,Meat Gain, Special, Item Drops]);
 	foreach i in runLog
 	{
 		boolean log = false;
 		string line = runLog[i];
 		string enc;
-		//Skip til you find beginning of ascension - 1 day ascensions will probably break this
+		/*
+			Ascension Matching
+		*/
+		matcher runType = create_matcher("^(Casual|Softcore|Hardcore) "+pathmatch+" "+classmatch,line);
+		matcher moonmatchMatcher = create_matcher(moonmatch, line);	
 		matcher ascensionInt = create_matcher("Ascension #(\\d+\):",line);
+		//Skip til you find beginning of ascension - 1 day ascensions will probably break this
 		boolean found = ascensionInt.find();
 		if(!found && startIndex == -1)
 		{
@@ -459,8 +346,17 @@ void RunLogParse(int ascension, string startlog, string endlog)
 		}
 		else if(found)
 		{			
-			print(ascensionInt.group(0));
+			writeln("<h3><br/>"+ascensionInt.group(0));
 			startIndex = i;
+		}
+		if(runType.find())
+		{
+			writeln(runType.group(0));
+		}
+		if(moonmatchMatcher.find())
+		{
+			writeln("<br/>"+moonmatchMatcher.group(0)+"</h3>");
+			startTable($strings[Turn,Location,Encounter,Familiar,Stat Gains,Meat Gain, Special, Item Drops]);
 		}
 		//Abort when end is found
 		//End of CS - "Took choice 1089/30: Perform Service"
@@ -674,15 +570,13 @@ void main()
 	set_property("logStatGains",true);
 	set_property("logStatusEffects",true);
 
-	findAscensions(10);
 	file_to_map("logascensions.txt",Ascensions);
 	write_page();
 	if(Ascensions.count() == 0)
 	{	
-		writeln("Please run ascension finder");
+		writeln("Please run ascensionFinder.ash");
 	}
 	boolean[string] options;
-		
 	write_box("Options:");
 	write_box("Choose ascension to load:");
 	
@@ -703,64 +597,69 @@ void main()
 	write_radio("pulls", "tables", "Pulls", "pulls");	
 	fields = form_fields();
 	//success = count(fields) > 0;
-	if(write_button("upd", "Update")) {
-		writeln("Updated");
+	if(write_button("load", "Load")) {
+		writeln("<br/>Loaded...");
+		
+		switch(fields['ascension'])
+		{
+			case "":
+			{
+				break;
+			}
+			case fields['ascension']:
+			{
+				if( fields['charts'] == "on")
+				{
+					//doCharts();
+				}
+				
+				if( fields['tables'] == "logs")
+				{
+					printTrace("running logs");
+					foreach asc,startdate,enddate in Ascensions
+					{
+						if(asc == fields['ascension'].to_int())
+						{
+							RunLogParse(asc,startdate,enddate);
+						}
+					}
+					
+				}
+				else if( fields['tables'] == "skills")
+				{
+					printTrace("running skills");
+					foreach asc,startdate,enddate in Ascensions
+					{
+						if(asc == fields['ascension'].to_int())
+						{
+							//RunLogParse(asc,startdate,enddate);
+						}
+					}
+					
+				}
+				else if( fields['tables'] == "pulls")
+				{
+					printTrace("running pulls");
+					foreach asc,startdate,enddate in Ascensions
+					{
+						if(asc == fields['ascension'].to_int())
+						{
+							RunPullsParse(asc);
+						}
+					}
+					
+				}
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
 	}
-	switch(fields['ascension'])
-	{
-		case "":
-		{
-			break;
-		}
-		case fields['ascension']:
-		{
-			if( fields['charts'] == "on")
-			{
-				//doCharts();
-			}
-			
-			if( fields['tables'] == "logs")
-			{
-				printTrace("running logs");
-				foreach asc,startdate,enddate in Ascensions
-				{
-					if(asc == fields['ascension'].to_int())
-					{
-						RunLogParse(asc,startdate,enddate);
-					}
-				}
-				
-			}
-			else if( fields['tables'] == "skills")
-			{
-				printTrace("running skills");
-				foreach asc,startdate,enddate in Ascensions
-				{
-					if(asc == fields['ascension'].to_int())
-					{
-						//RunLogParse(asc,startdate,enddate);
-					}
-				}
-				
-			}
-			else if( fields['tables'] == "pulls")
-			{
-				printTrace("running pulls");
-				foreach asc,startdate,enddate in Ascensions
-				{
-					if(asc == fields['ascension'].to_int())
-					{
-						RunPullsParse(asc);
-					}
-				}
-				
-			}
-			break;
-		}
-		default:
-		{
-			break;
-		}
+	foreach i, j in fields{
+		print(i);
+		print(j);
 	}
     finish_page(); 
 }
