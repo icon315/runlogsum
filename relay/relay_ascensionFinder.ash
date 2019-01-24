@@ -50,6 +50,11 @@ Disguises Delimit,
 
 boolean[string] speclist = $strings[
 LOV Enamorang,
+LOV Extraterrestrial Chocolate,
+LOV Eardigan,
+LOV Epaulettes,
+LOV Earrings,
+worm-riding manual page,
 DISINTEGRATE,
 KGB TRANQUILIZER DART,
 SPRING-LOADED FRONT BUMPER,
@@ -154,7 +159,7 @@ void finishTable()
 
 void printTrace(string mes)
 {	
-	//print(get_stack_trace()[0].line+": "+mes);
+	//printTrace(get_stack_trace()[0].line+": "+mes);
 }
 
 
@@ -167,19 +172,26 @@ string loadLogs(int ascension)
 	{
 		if(asc == ascension)
 		{
-			print(date);
-			print(dateend);
-			print(datediff(date,dateend));
+			printTrace(date);
+			printTrace(dateend);
+			printTrace(datediff(date,dateend));
 			sessionlogs = session_logs(my_name(),date,datediff(date,dateend));
 			break;
 		}
 	}
 	for i from 0 to sessionlogs.count()-1
 	{
-		print(sessionlogs[i].length());
+		printTrace(sessionlogs[i].length());
 		cumlog += sessionlogs[i];
 	}
-	print(cumlog.length());
+	printTrace(cumlog.length());
+	int ascStart = cumlog.index_of("Ascension #"+ascension+":");
+	if(cumlog.index_of("Took choice 1089/30: Perform Service", ascStart) != -1)
+		cumlog = cumlog.substring(ascStart,cumlog.index_of("Took choice 1089/30: Perform Service",ascStart));
+	else if(cumlog.index_of("Freeing King Ralph", ascStart) != -1)
+		cumlog = cumlog.substring(ascStart,cumlog.index_of("Freeing King Ralph",ascStart));
+	else if(cumlog.index_of("Encounter: You Found It!", ascStart) != -1)
+		cumlog = cumlog.substring(ascStart,cumlog.index_of("Encounter: You Found It!",ascStart));
 	return cumlog;
 }
 
@@ -192,19 +204,19 @@ string[int] loadLogsArray(int ascension)
 	{
 		if(asc == ascension)
 		{
-			print(date);
-			print(dateend);
-			print(datediff(date,dateend));
+			printTrace(date);
+			printTrace(dateend);
+			printTrace(datediff(date,dateend));
 			sessionlogs = session_logs(my_name(),date,datediff(date,dateend));
 			break;
 		}
 	}
 	for i from 0 to sessionlogs.count()-1
 	{
-		print(sessionlogs[i].length());
+		printTrace(sessionlogs[i].length());
 		cumlog += sessionlogs[i];
 	}
-	print(cumlog.length());
+	printTrace(cumlog.length());
 	return cumlog.split_string("\\n");
 }
 
@@ -221,15 +233,17 @@ int beatenUpCount(string log)
 
 
 
-int[item,string] getConsumablesUsed(string log)
+int[string,string] getConsumables(string log)
 {
-	int[item,string] consList;
+	int[string,string] consList;
 	matcher cons = create_matcher("(eat|drink|chew) (\\d+?) (.+?)\n",log);
-		while (find(cons))
-		{
-			consList[cons.group(3).to_item(),cons.group(2)] = cons.group(1).to_int();
+	while (find(cons))
+	{
+		print(cons.group(3));
+		print(cons.end());
+		consList[cons.group(3),cons.group(1)] += cons.group(2).to_int();
 
-		}
+	}
 
 	return consList;
 }
@@ -246,7 +260,7 @@ int[skill] getCombatSkillsUsed(string log)
 	return skillsList;
 }
 
-int[skill] getSkillsUsed(string log)
+int[skill] getSkills(string log)
 {
 	int[skill] skillsList;
 	matcher skills = create_matcher("cast (\\d+?) (.+?)\n",log);
@@ -262,13 +276,14 @@ int[skill] getSkillsUsed(string log)
 int[item] getPulls(string log)
 {
 	int[item] pullList;
-	matcher pulls = create_matcher("pull: (\\d+) (.+?)\n",log);
-	while (find(pulls))
+	matcher pulls = create_matcher("\npull: (\\d+) (.+?)\n",log);
+	while (pulls.find())
 	{
 		pullList[pulls.group(2).to_item()] += pulls.group(1).to_int();
 	}
 	return pullList;
 }
+
 
 
 int[int] serviceTurns(string log)
@@ -298,11 +313,46 @@ void RunPullsParse(int ascension)
 		row();
 	
 	}
+	finishTable();
+}
+
+void RunSkillsParse(int ascension)
+{
+	int[skill] skillLog = getSkills(loadLogs(ascension));
+	startTable($strings[Skill,Total MP,Estimated MP Cost]);
+	foreach i in skillLog
+	{
+		row();
+		column(i);
+		column(skillLog[i]);
+		column((mp_cost(i))*(skillLog[i]));
+		row();
+	
+	}
+	finishTable();
 
 }
+void RunConsumablesParse(int ascension)
+{
+	int[string,string] consLog = getConsumables(loadLogs(ascension));
+	startTable($strings[Type,Item,Amount]);
+	foreach x,y,z in consLog
+	{
+		row();
+		column(y);
+		column(x);
+		column(z);
+		row();
+	
+	}
+	finishTable();
+
+}
+
 void RunLogParse(int ascension, string startlog, string endlog)
 {
 	string[int] runLog = loadLogsArray(ascension);
+	int[string] locationList;
 	printTrace(runLog.count());
 	int startIndex = -1;
 	int endIndex;
@@ -310,7 +360,7 @@ void RunLogParse(int ascension, string startlog, string endlog)
 	int logCount = 0;
 	string previousEncounter;
 //  0000	Turn	Location	Encounter	Familiar	Mus	Myst	Mox	Meat	Special	Items	0
-	int[string,string,string,string,string,string,string,string,string,string] runLogArray;
+	int[string,string,string,string,string,string,string,string,string,string,string] runLogArray;
 	string loc,fam,spc,itm;
 	int mus,mys,mox,meat;
 	logData thisEncounter;
@@ -445,22 +495,49 @@ void RunLogParse(int ascension, string startlog, string endlog)
 			currentTurn += serviceLog.group(2).to_int();
 			//printTrace("["+currentTurn+"] " +line);
 			loc = "Community Service";
+			locationList[enc] = serviceLog.group(2).to_int();
 			log = true;
 			logCount++;
 		}
-		//You acquire an item:
-		matcher acquire = create_matcher("^You acquire an item:(.+?)$", line);
+		//You acquire an item: x (y)
+		matcher acquire = create_matcher("^You acquire an item: (.+?)$", line);
 		if(acquire.find())
 		{
-			itm += " - "+acquire.group(1);
+			matcher multiple =  create_matcher("(.+?) \\((\\d+)\\)", acquire.group(1));
+			if(multiple.find())
+			{
+				printTrace("=======================================================================");
+				printTrace(multiple.group(1));
+				printTrace(multiple.group(2));
+				if(speclist contains multiple.group(1))
+				{
+					spc +=  " - "+multiple.group(1)+" ("+multiple.group(2)+")";
+					printTrace(spc);
+				}
+				else
+					itm += " - "+multiple.group(1)+" ("+multiple.group(2)+")";
+			}
+			else
+			{
+				printTrace(acquire.group(1));
+				if(speclist contains acquire.group(1))
+				{
+					spc +=  " - "+acquire.group(1);
+					printTrace(spc);
+				}
+				else
+					itm += " - "+acquire.group(1);
+			}
 		}
+		
 		
 		matcher adven = create_matcher("^\\[(\\d+)\\](.+?)$", line);
 		if(adven.find())
 		{
 			if(adven.group(1).to_int() < currentTurn)
 				abort("Something went wrong current turncount is less than previous");
-			
+			if(currentTurn < adven.group(1).to_int())
+				locationList[adven.group(2)]++;
 			//[2] Cook 1 scrumptious reagent + 1 glass of goat's milk
 			matcher crafting = create_matcher("(Cook|Mix)(.+?)$;",adven.group(2));
 			if(crafting.find())
@@ -484,7 +561,11 @@ void RunLogParse(int ascension, string startlog, string endlog)
 			printTrace(encounter.group(1));
 			printTrace(encounter.group(1).url_encode());
 			logCount++;
-			log = true;
+			//Encounter: Starship Partnership :: In your Quarters
+			matcher timeSpinner = create_matcher("Starship (.+)",enc);
+			matcher bastille = create_matcher("(Bastille Battalion( \\(turn #[\\d+]\\))?|Cheese Seeking Behavior|Castle vs. Castle)",enc);
+			if(!timeSpinner.find() && !bastille.find())
+				log = true;
 		}
 		//Familiar "familiar XO Skeleton (25 lbs)"
 		matcher familarmatch = create_matcher("^familiar (.+) \\((\\d+) lbs\\)",line);
@@ -537,13 +618,16 @@ void RunLogParse(int ascension, string startlog, string endlog)
 			column(fam);
 			column("("+mus+","+mys+","+mox+")");
 			column(meat);
+			column(spc.length() == 0 ? "" : spc.substring(2, spc.length()));
+			column(itm.length() == 0 ? "" : itm.substring(2, itm.length()));
 			row();
+			runLogArray[to_string(logCount,"%04d"),to_string(currentTurn),loc,enc,fam,mus.to_string(),mys.to_string(),mox.to_string(),meat.to_string(),(itm.length() == 0 ? "" : itm.substring(2, itm.length())), (spc.length() == 0 ? "" : spc.substring(2, spc.length()))] = logCount;
 			mus = 0;
 			mys = 0;
 			mox = 0;
 			meat = 0;
 			itm="";
-			runLogArray[to_string(logCount,"%04d"),to_string(currentTurn),loc,enc,fam,mus.to_string(),mys.to_string(),mox.to_string(),meat.to_string(),itm] = logCount;
+			spc="";
 		}
 		
 		/*
@@ -551,9 +635,10 @@ void RunLogParse(int ascension, string startlog, string endlog)
 		*/
 	}
 	
-	
+	foreach i in locationList
+		print(i+": "+locationList[i]);
 	finishTable();
-//	map_to_file(runLogArray,my_name()+"testing.txt");
+	map_to_file(runLogArray,my_name()+"testing.txt");
 	
 }
 
@@ -594,6 +679,7 @@ void main()
 	writeln("<h2>Which charts to load?</h2>");
 	write_radio("logs", "tables", "All Logs", "logs");	
 	write_radio("skills", "tables", "Skills", "skills");	
+	write_radio("consumables", "tables", "Consumables", "consumables");	
 	write_radio("pulls", "tables", "Pulls", "pulls");	
 	fields = form_fields();
 	//success = count(fields) > 0;
@@ -632,7 +718,7 @@ void main()
 					{
 						if(asc == fields['ascension'].to_int())
 						{
-							//RunLogParse(asc,startdate,enddate);
+							RunSkillsParse(asc);
 						}
 					}
 					
@@ -649,6 +735,18 @@ void main()
 					}
 					
 				}
+				else if( fields['tables'] == "consumables")
+				{
+					printTrace("running consumables");
+					foreach asc,startdate,enddate in Ascensions
+					{
+						if(asc == fields['ascension'].to_int())
+						{
+							RunConsumablesParse(asc);
+						}
+					}
+					
+				}
 				break;
 			}
 			default:
@@ -658,8 +756,8 @@ void main()
 		}
 	}
 	foreach i, j in fields{
-		print(i);
-		print(j);
+		printTrace(i);
+		printTrace(j);
 	}
     finish_page(); 
 }

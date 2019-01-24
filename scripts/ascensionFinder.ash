@@ -28,24 +28,26 @@ string intAsDate(int dateInt)
 void findAscensions(int x)
 {
 	x--;
-	boolean aftercore = true;
+	boolean isAftercore = true;
 	if(get_property("questL13Final") != "finished")
-		aftercore = false;
+		isAftercore = false;
 	string startDate = today_to_string();
 	file_to_map("logascensions.txt",Ascensions);
-	for i from my_ascensions()+1 to (my_ascensions()-x)
+	for i from my_ascensions() to (my_ascensions()-x)
 	{
-		if(Ascensions contains i)
-		{
-			printTrace("Already Recored");
-			continue;
-		}
+		boolean currentAsc = (i == my_ascensions());
 		string logDateString;
 		string [int]logToCheck;
 		boolean foundEnd = false;
 		int logChecked = 0;
 		string logEndDate;
-		if(!aftercore && i == my_ascensions()+1)
+		
+		if(Ascensions contains i && !currentAsc)
+		{
+			printTrace("Already Recored");
+			continue;
+		}
+		if(!isAftercore && currentAsc)
 		{
 			logDateString = intAsDate(dateAsInt(startDate)-logChecked);
 			printTrace("End log date: "+logDateString);
@@ -73,18 +75,19 @@ void findAscensions(int x)
 		startDate = intAsDate(dateAsInt(logDateString)-1);
 	}
 	startDate = today_to_string();
-	for i from my_ascensions()+1 to (my_ascensions()-x)
+	for i from my_ascensions() to (my_ascensions()-x)
 	{
-		if(Ascensions contains i)
-		{
-			printTrace("Already Recored");
-			continue;
-		}
+		boolean currentAsc = (i == my_ascensions());
 		string logDateString;
 		string [int]logToCheck;
 		boolean foundStart = false;
 		int logChecked = 0;
 		string logStartDate;
+		if(Ascensions contains i && !currentAsc)
+		{
+			printTrace("Already Recored");
+			continue;
+		}
 		while(!foundStart)
 		{
 			logDateString = intAsDate(dateAsInt(startDate)-logChecked);
@@ -102,7 +105,7 @@ void findAscensions(int x)
 			logChecked++;
 
 		}
-		printTrace("Found ascension End "+i+": "+my_name() +"_" +logStartDate+".txt");
+		printTrace("Found ascension Start "+i+": "+my_name() +"_" +logStartDate+".txt");
 		startDate = intAsDate(dateAsInt(logDateString)-1);
 	}
 
